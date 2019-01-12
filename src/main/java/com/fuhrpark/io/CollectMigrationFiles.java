@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.BiPredicate;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Mojo(name = "collectMigrationFiles", defaultPhase = LifecyclePhase.GENERATE_RESOURCES)
@@ -37,10 +38,57 @@ public class CollectMigrationFiles extends AbstractMojo {
     @Parameter
     private String resourceTarget;
 
-    @Parameter String resourceFileExtension;
+    @Parameter
+    String resourceFileExtension;
+
+    private static final String versionDirPattern = "[0-9]+(\\.[0-9]+)*";
+
+    private void deleteAll(Path path) throws IOException {
+        if (Files.exists(path)) {
+            if (Files.isDirectory(path)) {
+                try (DirectoryStream<Path> childPathsStream = Files.newDirectoryStream(path)) {
+                    for (Path child : childPathsStream)
+                        deleteAll(child);
+                }
+                Files.delete(path);
+            } else {
+                Files.delete(path);
+            }
+        }
+    }
+    private boolean isMigrationFile(Path filePath, BasicFileAttributes basicFileAttributes) {
+        return basicFileAttributes.isRegularFile() && filePath.toString().endsWith(resourceFileExtension) && filePath.getParent().getFileName().toString().matches(versionDirPattern);
+    }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        System.out.println("start collection");
+        Path targetPath = Paths.get(build.getOutputDirectory(), migrationTarget);
+        if (Files.exists(targetPath)) {
+            try {
+                deleteAll(targetPath);
+            } catch (IOException pE) {
+                throw new MojoExecutionException("Could not delete target path",pE);
+            }
+        }
+        if (!targetPath.toFile().mkdirs()) {
+            throw new MojoExecutionException("Could not create target path " + targetPath);
+        }
+
+        try (Stream<Path> migrationFileStream = Files.find(Paths.get(projectBaseDir.getAbsolutePath(), migrationResourcePath), Integer.MAX_VALUE, this::isMigrationFile)) {
+            migrationFileStream.forEach(fs -> {
+                Path targetFilePath = targetPath.resolve(fs.getParent().getFileName().toString() + "." + fs.getFileName().toString());
+                try {
+                    Files.copy(fs, targetFilePath);
+                } catch (IOException e) {
+                    throw new RuntimeException("Could not copy " + fs + " to " + targetFilePath, e);
+                }
+            });
+
+        } catch (Exception pE) {
+            throw new MojoExecutionException("", pE);
+        }
+
 //        Version version = Version.parseVersion(currentProjectVersion);
 //
 //        File migrationResourceDir = new File(projectBaseDir, migrationResourcePath);

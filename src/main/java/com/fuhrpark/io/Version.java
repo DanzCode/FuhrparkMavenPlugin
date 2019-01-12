@@ -69,5 +69,5 @@ public class Version implements Comparable<Version> {
         return String.format("%d.%d",mayor,minor);
     }
 
-    public String formatBugfixVersion() { return String.format("%d.%d",formatReleaseVersion(), revision); }
+    public String formatBugfixVersion() { return String.format("%s.%d",formatReleaseVersion(), revision); }
 }
