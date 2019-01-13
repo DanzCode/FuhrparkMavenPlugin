@@ -5,7 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Version implements Comparable<Version> {
-    private static final Pattern VERSION_PATTERN = Pattern.compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\.([0-9]+))?([^0-9].*)?");
+    private static final Pattern VERSION_PATTERN = Pattern.compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([^0-9].*))?");
 
     public int mayor;
     public int minor;
@@ -25,7 +25,7 @@ public class Version implements Comparable<Version> {
         if (! matcher.matches()) {
             throw new RuntimeException("Versionstring "+versionString+" is not well formatted");
         }
-        return new Version(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),matcher.groupCount()>4?Integer.parseInt(matcher.group(5)):0,matcher.groupCount()>5?matcher.group(6):"");
+        return new Version(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)), Integer.parseInt(matcher.group(3)),0,matcher.groupCount()>5?matcher.group(6):"");
     }
 
     public Version(int mayor, int minor, int revision) {

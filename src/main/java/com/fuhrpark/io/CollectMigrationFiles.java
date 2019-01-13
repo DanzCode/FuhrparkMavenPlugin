@@ -77,7 +77,7 @@ public class CollectMigrationFiles extends AbstractMojo {
 
         try (Stream<Path> migrationFileStream = Files.find(Paths.get(projectBaseDir.getAbsolutePath(), migrationResourcePath), Integer.MAX_VALUE, this::isMigrationFile)) {
             migrationFileStream.forEach(fs -> {
-                Path targetFilePath = targetPath.resolve(fs.getParent().getFileName().toString() + "." + fs.getFileName().toString());
+                Path targetFilePath = targetPath.resolve("V0." + fs.getFileName().toString().replaceFirst("-","__"));
                 try {
                     Files.copy(fs, targetFilePath);
                 } catch (IOException e) {
